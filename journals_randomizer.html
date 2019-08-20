@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Assignments randomizer</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+  </head>
+  <body>
+      <nav class="navbar navbar-light bg-light">
+          <span class="navbar-brand mb-0 h1">Weekly assignments randomizer</span>
+      </nav>
+     
+<div class="container mt-4">
+    <form id="form">
+      <div class="row">
+        <div class="form-group col-md-4">
+            <label>Weeks</label>
+            <input type="number" class="form-control" id="weeks">
+        </div>
+        <div class="form-group col-md-4">
+            <label>Students</label>
+            <input type="number" class="form-control" id="students">
+        </div>
+        <div class="form-group col-md-4">
+            <label>Assignments</label>
+            <input type="number" class="form-control" name="assignments">
+        </div>   
+    </form> 
+</div>   
+<div class="container mt-4 text-center">      
+    <input type="button" class="btn btn-primary ml-3 my-1" id="generateTable" value="Randomize">
+    <input type="button" class="btn btn-secondary ml-3 my-1" id="saveButton" value="Save table">
+    <input type="button" class="btn btn-success ml-3 my-1" id="copy" value="Copy table">  
+</div>     
+<div id="alert-spot" class="container mt-4 text-center">
+    
+</div>
+
+<div class="container mt-4 table-responsive">
+        <table class="table table-sm table-bordered table-hover" id="table">
+          <thead>
+            <tr class="table-primary">
+            </tr>
+          </thead>
+          <tbody id="body">
+          </tbody>
+        </table>
+</div>
+
+<script>               
+
+class UI {
+  static copyTable() {
+        
+        let body = document.body, range, sel;
+        let tableToCopy = document.getElementById('table');
+        if (document.createRange && window.getSelection) {
+            range = document.createRange();
+            sel = window.getSelection();
+            sel.removeAllRanges();
+            try {
+                range.selectNodeContents(tableToCopy);
+                sel.addRange(range);
+            } catch (e) {
+                range.selectNode(tableToCopy);
+                sel.addRange(range);
+            }
+            document.execCommand("copy");
+
+        } else if (body.createTextRange) {
+            range = body.createTextRange();
+            range.moveToElementText(tableToCopy);
+            range.select();
+            range.execCommand("copy");
+        }
+        Alert.showAlert('The table is now coppied to clippboard. Open a Microsoft Excel spreadsheet and simply paste (Ctrl+V) the table there. ', 'success');
+    }
+        
+  static createRandomArray() {      
+  let duration = form.elements['weeks'].value;
+  let students = form.elements['students'].value;
+  let assignements = form.elements['assignments'].value;
+  let array = [];
+  if (duration == 0 || students == 0 || assignements == 0) {
+    Alert.showAlert('Please, fill in all fields to generate the table!', 'danger');
+    } else {   
+      for (let student = 0; student < students; student++) {
+        array [student] = [];   //Rows FIRST!!!!!!!!!!!!!!!!!!!!!!!
+        let weeks = Array.from({ length: duration }, (_, i) => i); //Hereby we declare that for each student there is a separate week array, otherwise we will get repetitions
+        for (let assignement = 0; assignement < assignements; assignement++) {     
+          array[student][assignement] = UI.getRandomWeek(weeks);
+        }
+        array[student].sort((a,b) => a - b);
+      }
+      UI.makeTable(array);
+      console.log(array); //for debugging  
+    }         
+  }
+  
+  static getRandomWeek(weeks) {
+    let randomNum = Math.floor(Math.random() * weeks.length);
+    return weeks.splice(randomNum, 1).shift() + 1; //splice removes item(s) and returns array of deleted item(s), shift removes the first item and returns its value. In this case shift removes the only item 
+  }
+        
+  static makeTable(data) {
+    let duration = form.elements['weeks'].value;
+    //MAKE HEADER
+    let header = document.querySelector('#table thead tr');
+    header.innerHTML = ''; //empties the header when user renues data
+    for (let i = 0; i < (duration + 1)/10; ++i) {
+    let headercollumn = document.createElement('th');
+    headercollumn.textContent = i === 0 ? 'Students' : `Week ${i}`; //? - shorthand for an if...else statement. (condition) ? expression on true : expression on false
+    header.appendChild(headercollumn);
+    }
+    //MAKE BODY      
+    let tbody = document.querySelector('#table tbody');
+    tbody.innerHTML = '';
+    data.forEach((studentRow, i) => {
+    let row = document.createElement('tr');
+    let studentnumber = document.createElement('td');
+    studentnumber.innerHTML = `Student ${i+1}`;
+    row.appendChild(studentnumber); 
+    for (let i = 1; i < (duration + 1)/10; ++i) {
+    let col = document.createElement('td');
+    col.innerHTML = i >= studentRow.indexOf(i) & studentRow.indexOf(i) >= 0 ? `${i}` : '';
+    row.appendChild(col);                 
+    }
+    tbody.appendChild(row);          
+    });  
+  }
+} 
+
+class Storage {
+
+  static saveToStorage() {
+  let table = document.querySelector('#table').innerHTML;
+  if (localStorage.getItem('table') === null) {
+    localStorage.setItem('table', JSON.stringify(table));
+  } else {
+    localStorage.clear();
+    localStorage.setItem('table', JSON.stringify(table));
+  }
+  Alert.showAlert('You have saved the table! Now it will not disappear after reloading the page', 'secondary');
+}
+  
+  static displaySavedTable () {
+    let table; 
+    if (localStorage.getItem('table') === null) {
+      table = null;
+    } else {
+      table = JSON.parse(localStorage.getItem('table'));
+      document.querySelector('#table').innerHTML = table;
+    }
+   }
+} 
+
+class Alert {
+  static showAlert(message, className) {
+        let div = document.createElement('div');
+        div.className = `alert alert-${className}`;
+        div.appendChild(document.createTextNode(message));
+        const container = document.querySelector('#alert-spot');
+        container.innerHTML = '';
+        container.appendChild(div);
+        //Vanish in 3 seconds
+        setTimeout(() => document.querySelector('.alert').remove(), 10000);
+    } 
+}
+  
+  document.addEventListener('DOMContentLoaded', Storage.displaySavedTable);
+  document.querySelector('#generateTable').addEventListener('click', UI.createRandomArray);
+  document.querySelector('#saveButton').addEventListener('click', Storage.saveToStorage);
+  document.querySelector('#copy').addEventListener('click', UI.copyTable);
+                    
+</script>     
+</body>
+</html>
